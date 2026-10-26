@@ -1,0 +1,134 @@
+<Window x:Class="EdgeShelf.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="EdgeShelf"
+        Width="360"
+        Height="720"
+        MinWidth="4"
+        MinHeight="320"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        ShowInTaskbar="True"
+        Topmost="True"
+        AllowsTransparency="True"
+        Background="Transparent"
+        AllowDrop="True"
+        DragOver="DropZone_DragOver"
+        Drop="DropZone_Drop"
+        DragLeave="DropZone_DragLeave"
+        ShowActivated="False"
+        MouseEnter="Window_MouseEnter"
+        MouseLeave="Window_MouseLeave">
+    <Window.Resources>
+        <Style x:Key="ItemCardStyle" TargetType="Border">
+            <Setter Property="Background" Value="#172033" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="Padding" Value="10" />
+            <Setter Property="Margin" Value="0,0,0,8" />
+            <Setter Property="BorderBrush" Value="#263754" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=IsSelected}" Value="True">
+                    <Setter Property="BorderBrush" Value="#62A7FF" />
+                    <Setter Property="Background" Value="#1D3557" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+    <Grid Background="Transparent" AllowDrop="True" DragOver="DropZone_DragOver" Drop="DropZone_Drop" DragLeave="DropZone_DragLeave" MouseLeftButtonDown="HandleSurface_MouseLeftButtonDown">
+        <!-- Nearly invisible fill keeps the transparent edge reliably hit-testable on Windows. -->
+        <Border x:Name="EdgeTrigger" Width="4" HorizontalAlignment="Left" Background="#01000000" IsHitTestVisible="True" />
+        <ui:Button x:Name="HandleButton" Content="←" Width="24" Height="96" HorizontalAlignment="Left" VerticalAlignment="Center" Click="HandleButton_Click" Visibility="Collapsed" Background="#CCFFFFFF" Foreground="#253044" FontSize="14" FontWeight="Bold" BorderThickness="0" ToolTip="" />
+        <Border x:Name="ContentPanel" Background="#0C1220" CornerRadius="16" BorderBrush="#263754" BorderThickness="1" ClipToBounds="True" AllowDrop="True" DragOver="DropZone_DragOver" Drop="DropZone_Drop">
+        <Grid Margin="16">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <DockPanel Grid.Row="0" LastChildFill="False">
+                <StackPanel DockPanel.Dock="Left">
+                    <TextBlock Text="EdgeShelf" Foreground="#F4F7FF" FontSize="20" FontWeight="SemiBold" />
+                    <TextBlock x:Name="SubtitleText" Text="截图与文件中转站" Foreground="#8D9AB1" FontSize="12" Margin="0,3,0,0" />
+                </StackPanel>
+                <Button DockPanel.Dock="Right" Content="×" Width="30" Height="30" Padding="0" FontSize="18" Click="CloseButton_Click" Background="Transparent" Foreground="#A9B5C9" BorderThickness="0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
+            </DockPanel>
+            <Border x:Name="DropHint" Grid.Row="1" Margin="0,16,0,12" Padding="12" Background="#121B2C" CornerRadius="12" PreviewMouseLeftButtonDown="DropHint_PreviewMouseLeftButtonDown" PreviewMouseMove="DropHint_PreviewMouseMove" PreviewMouseLeftButtonUp="DropHint_PreviewMouseLeftButtonUp">
+                <StackPanel>
+                    <TextBlock x:Name="DropTitleText" Text="把文件拖到这里" Foreground="#DCE6F7" FontSize="14" FontWeight="SemiBold" />
+                    <TextBlock x:Name="DropDescriptionText" Text="支持多个文件和文件夹，应用只保存原路径" Foreground="#8492AA" FontSize="11" Margin="0,4,0,0" />
+                </StackPanel>
+            </Border>
+            <Grid Grid.Row="2">
+            <ListBox x:Name="ItemsList" ItemsSource="{Binding Items}" BorderThickness="0" Background="Transparent" FocusVisualStyle="{x:Null}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectionMode="Extended" SelectionChanged="ItemsList_SelectionChanged" PreviewMouseMove="Items_PreviewMouseMove" PreviewMouseLeftButtonDown="Items_PreviewMouseLeftButtonDown" PreviewMouseLeftButtonUp="Items_PreviewMouseLeftButtonUp" MouseDoubleClick="Items_MouseDoubleClick">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Border Style="{StaticResource ItemCardStyle}" ContextMenuOpening="Item_ContextMenuOpening">
+                            <Border.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="固定 / 取消固定" Tag="pin" Click="TogglePin_Click" />
+                                    <MenuItem Header="从侧栏移除" Tag="remove" Click="RemoveItem_Click" />
+                                </ContextMenu>
+                            </Border.ContextMenu>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="44" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Border Width="38" Height="38" CornerRadius="8" Background="#273B5B" VerticalAlignment="Top">
+                                    <Grid>
+                                        <TextBlock x:Name="TypeLabel" Text="{Binding TypeLabel}" Foreground="#BFD7FF" FontSize="10" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        <Image Source="{Binding Path, Converter={StaticResource ScreenshotThumbnailConverter}}" Stretch="UniformToFill">
+                                            <Image.Style>
+                                                <Style TargetType="Image">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsScreenshot}" Value="True">
+                                                            <Setter Property="Visibility" Value="Visible" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Image.Style>
+                                        </Image>
+                                    </Grid>
+                                </Border>
+                                <StackPanel Grid.Column="1" Margin="10,0,8,0">
+                                    <TextBlock Text="{Binding DisplayName}" Foreground="#EFF4FF" FontSize="13" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{Binding Path}" Foreground="#8998B2" FontSize="10" TextTrimming="CharacterEllipsis" Margin="0,4,0,0" />
+                                    <TextBlock x:Name="InvalidFileText" Text="文件已失效" Tag="invalid" Foreground="#FF9C9C" FontSize="10">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Exists}" Value="False">
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </StackPanel>
+                                <TextBlock Grid.Column="2" Text="★" Foreground="#FFD166" FontSize="14" Visibility="{Binding IsPinned, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+            <Canvas x:Name="MarqueeCanvas" IsHitTestVisible="False">
+                <Rectangle x:Name="MarqueeRectangle" Stroke="#68A7FF" StrokeThickness="1" Fill="#3068A7FF" Visibility="Collapsed" />
+            </Canvas>
+            </Grid>
+            <DockPanel Grid.Row="3" Margin="0,12,0,0" LastChildFill="False">
+                <TextBlock x:Name="SelectionCountText" DockPanel.Dock="Left" Text="Win + Shift + S 截图" Foreground="#8290A7" FontSize="11" VerticalAlignment="Center" />
+                <ui:Button x:Name="DeleteSelectedButton" DockPanel.Dock="Right" Content="删除所选" Click="DeleteSelected_Click" Padding="10,6" Background="#7B3340" Foreground="White" BorderThickness="0" IsEnabled="False" />
+            </DockPanel>
+        </Grid>
+        </Border>
+    </Grid>
+</Window>

@@ -1,0 +1,34 @@
+# Build output
+bin/
+obj/
+publish/
+artifacts/
+
+# IDE and editor state
+.vs/
+.vscode/
+*.user
+*.suo
+
+# Local app data and diagnostics
+items.json
+settings.json
+*.log
+*.dmp
+cache/
+.env
+.env.*
+!.env.example
+*.pfx
+*.p12
+*.pem
+*.key
+
+# Portable downloads and installer output
+*.exe
+*.msi
+*.zip
+
+# OS noise
+Thumbs.db
+Desktop.ini

@@ -1,0 +1,20 @@
+<Window x:Class="EdgeShelf.CaptureOverlayWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        Topmost="True"
+        AllowsTransparency="True"
+        Background="#26000000"
+        Cursor="Cross"
+        ShowActivated="True"
+        MouseLeftButtonDown="Window_MouseLeftButtonDown"
+        MouseMove="Window_MouseMove"
+        MouseLeftButtonUp="Window_MouseLeftButtonUp"
+        KeyDown="Window_KeyDown">
+    <Canvas x:Name="OverlayCanvas">
+        <Rectangle x:Name="SelectionRectangle" Stroke="#62A7FF" StrokeThickness="2" Fill="#2262A7FF" Visibility="Collapsed" />
+        <TextBlock x:Name="HintText" Text="拖动选择截图区域，Esc 取消" Foreground="White" Background="#AA101827" Padding="8,4" Canvas.Left="20" Canvas.Top="20" />
+    </Canvas>
+</Window>
