@@ -6,6 +6,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
         Title="EdgeShelf"
+        Icon="Assets/EdgeShelf.ico"
         Width="360"
         Height="720"
         MinWidth="4"
@@ -21,6 +22,7 @@
         Drop="DropZone_Drop"
         DragLeave="DropZone_DragLeave"
         ShowActivated="False"
+        PreviewKeyDown="Window_PreviewKeyDown"
         MouseEnter="Window_MouseEnter"
         MouseLeave="Window_MouseLeave">
     <Window.Resources>
@@ -52,9 +54,12 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
             <DockPanel Grid.Row="0" LastChildFill="False">
-                <StackPanel DockPanel.Dock="Left">
-                    <TextBlock Text="EdgeShelf" Foreground="#F4F7FF" FontSize="20" FontWeight="SemiBold" />
-                    <TextBlock x:Name="SubtitleText" Text="截图与文件中转站" Foreground="#8D9AB1" FontSize="12" Margin="0,3,0,0" />
+                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
+                    <Image Source="Assets/EdgeShelf-logo.png" Width="30" Height="30" Stretch="Uniform" Margin="0,0,10,0" />
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="EdgeShelf" Foreground="#F4F7FF" FontSize="20" FontWeight="SemiBold" />
+                        <TextBlock x:Name="SubtitleText" Text="截图与文件中转站" Foreground="#8D9AB1" FontSize="12" Margin="0,3,0,0" />
+                    </StackPanel>
                 </StackPanel>
                 <Button DockPanel.Dock="Right" Content="×" Width="30" Height="30" Padding="0" FontSize="18" Click="CloseButton_Click" Background="Transparent" Foreground="#A9B5C9" BorderThickness="0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
             </DockPanel>
@@ -99,8 +104,7 @@
                                     </Grid>
                                 </Border>
                                 <StackPanel Grid.Column="1" Margin="10,0,8,0">
-                                    <TextBlock Text="{Binding DisplayName}" Foreground="#EFF4FF" FontSize="13" TextTrimming="CharacterEllipsis" />
-                                    <TextBlock Text="{Binding Path}" Foreground="#8998B2" FontSize="10" TextTrimming="CharacterEllipsis" Margin="0,4,0,0" />
+                                    <TextBlock Text="{Binding DisplayName}" ToolTip="{Binding DisplayName}" Foreground="#EFF4FF" FontSize="13" TextTrimming="CharacterEllipsis" />
                                     <TextBlock x:Name="InvalidFileText" Text="文件已失效" Tag="invalid" Foreground="#FF9C9C" FontSize="10">
                                         <TextBlock.Style>
                                             <Style TargetType="TextBlock">

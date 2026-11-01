@@ -22,8 +22,8 @@ public static class AppLanguage
     }
 
     public static string SelectionCount(int count) => IsEnglish
-        ? count == 0 ? "Win + Shift + S to capture" : $"{count} selected"
-        : count == 0 ? "Win + Shift + S 截图" : $"已选 {count} 项";
+        ? count == 0 ? "Win + Shift + S / WeChat Alt + A to capture" : $"{count} selected"
+        : count == 0 ? "Win + Shift + S / 微信 Alt + A 截图" : $"已选 {count} 项";
 
     private static readonly Dictionary<string, string> Chinese = new()
     {

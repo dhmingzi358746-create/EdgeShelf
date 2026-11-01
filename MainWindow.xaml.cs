@@ -15,6 +15,7 @@ using Forms = System.Windows.Forms;
 using WpfPoint = System.Windows.Point;
 using WpfDragEventArgs = System.Windows.DragEventArgs;
 using WpfMouseEventArgs = System.Windows.Input.MouseEventArgs;
+using WpfKeyEventArgs = System.Windows.Input.KeyEventArgs;
 using WpfDataFormats = System.Windows.DataFormats;
 using WpfDragDropEffects = System.Windows.DragDropEffects;
 using WpfDataObject = System.Windows.DataObject;
@@ -30,6 +31,7 @@ public partial class MainWindow : Window
     private readonly ShelfStore _store = new();
     private readonly SettingsService _settingsStore = new();
     private readonly EdgeShelfSettings _settings;
+    private readonly System.Drawing.Icon _applicationIcon;
     private readonly Forms.NotifyIcon _trayIcon;
     private readonly Forms.ToolStripMenuItem _trayShowItem;
     private readonly Forms.ToolStripMenuItem _trayRetentionItem;
@@ -72,9 +74,10 @@ public partial class MainWindow : Window
         AppLanguage.Set(_settings.Language ?? "zh-CN");
         DataContext = this;
 
+        _applicationIcon = LoadApplicationIcon();
         _trayIcon = new Forms.NotifyIcon
         {
-            Icon = SystemIcons.Application,
+            Icon = _applicationIcon,
             Visible = true,
             Text = "EdgeShelf"
         };
@@ -138,6 +141,7 @@ public partial class MainWindow : Window
         UnregisterClipboardListener();
         _trayIcon.Visible = false;
         _trayIcon.Dispose();
+        _applicationIcon.Dispose();
         _stateTimer.Stop();
         _collapseTimer.Stop();
         _captureRevealTimer.Stop();
@@ -241,10 +245,11 @@ public partial class MainWindow : Window
         HandleButton.Visibility = Visibility.Visible;
     }
 
-    private void SetExpanded(bool expanded, bool animate = true)
+    private void SetExpanded(bool expanded, bool animate = true, bool keepHandle = false)
     {
         var area = SystemParameters.WorkArea;
-        var targetWidth = expanded ? ExpandedWidth : EdgeTriggerWidth;
+        var showHandle = !expanded && keepHandle;
+        var targetWidth = expanded ? ExpandedWidth : showHandle ? HandleWidth : EdgeTriggerWidth;
         var targetLeft = area.Right - targetWidth;
         if (animate)
         {
@@ -259,8 +264,8 @@ public partial class MainWindow : Window
 
         ContentPanel.Visibility = expanded ? Visibility.Visible : Visibility.Collapsed;
         HandleButton.Width = HandleWidth;
-        HandleButton.Visibility = Visibility.Collapsed;
-        EdgeTrigger.Visibility = expanded ? Visibility.Collapsed : Visibility.Visible;
+        HandleButton.Visibility = showHandle ? Visibility.Visible : Visibility.Collapsed;
+        EdgeTrigger.Visibility = expanded || showHandle ? Visibility.Collapsed : Visibility.Visible;
     }
 
     private static System.Windows.Media.Animation.DoubleAnimation CreateBoundsAnimation(double from, double to, int durationMilliseconds) =>
@@ -272,7 +277,44 @@ public partial class MainWindow : Window
             }
         };
 
-    private void CloseButton_Click(object sender, RoutedEventArgs e) => Hide();
+    private void CloseButton_Click(object sender, RoutedEventArgs e)
+    {
+        _collapseTimer.Stop();
+        _captureRevealTimer.Stop();
+        _captureRevealActive = false;
+        SetExpanded(false, keepHandle: true);
+    }
+
+    private void Window_PreviewKeyDown(object sender, WpfKeyEventArgs e)
+    {
+        if (e.Key == Key.Delete && ItemsList.SelectedItems.Count > 0)
+        {
+            DeleteSelected_Click(sender, e);
+            e.Handled = true;
+        }
+    }
+
+    private static System.Drawing.Icon LoadApplicationIcon()
+    {
+        try
+        {
+            var resource = System.Windows.Application.GetResourceStream(
+                new Uri("pack://application:,,,/Assets/EdgeShelf.ico", UriKind.Absolute));
+            if (resource is not null)
+            {
+                using (resource.Stream)
+                {
+                    return new System.Drawing.Icon(resource.Stream);
+                }
+            }
+        }
+        catch (Exception)
+        {
+            // Fall back to the default icon if the embedded asset cannot be loaded.
+        }
+
+        return (System.Drawing.Icon)SystemIcons.Application.Clone();
+    }
 
     private void ChangeLanguage(string language)
     {
@@ -703,62 +745,177 @@ public partial class MainWindow : Window
 
     private void QueueClipboardImageImport()
     {
-        Dispatcher.BeginInvoke(new Action(async () =>
+        Dispatcher.BeginInvoke(new Action(async () => await ImportClipboardImageAsync()));
+    }
+
+    private async Task ImportClipboardImageAsync()
+    {
+        await Task.Delay(250);
+        var sequence = NativeMethods.GetClipboardSequenceNumber();
+        if (sequence == _lastClipboardSequence)
         {
-            await Task.Delay(250);
-            var sequence = NativeMethods.GetClipboardSequenceNumber();
-            if (sequence == _lastClipboardSequence)
+            return;
+        }
+
+        byte[]? pngBytes = null;
+        for (var attempt = 0; attempt < 8 && pngBytes is null; attempt++)
+        {
+            pngBytes = TryReadClipboardPng();
+            sequence = NativeMethods.GetClipboardSequenceNumber();
+
+            if (pngBytes is null && attempt < 7)
+            {
+                await Task.Delay(150);
+            }
+        }
+
+        _lastClipboardSequence = sequence;
+        if (pngBytes is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var imageHash = Convert.ToHexString(SHA256.HashData(pngBytes));
+            var now = DateTimeOffset.UtcNow;
+            if (imageHash == _lastClipboardImageHash && now - _lastClipboardImageAt < TimeSpan.FromSeconds(2))
             {
                 return;
             }
 
-            _lastClipboardSequence = sequence;
-            try
-            {
-                if (System.Windows.Clipboard.GetImage() is not BitmapSource image)
-                {
-                    return;
-                }
+            _lastClipboardImageHash = imageHash;
+            _lastClipboardImageAt = now;
+            var path = _store.CreateScreenshotPath();
+            File.WriteAllBytes(path, pngBytes);
 
+            Items.Insert(0, new ShelfItem
+            {
+                Kind = ShelfItemKind.Screenshot,
+                Path = path,
+                DisplayName = System.IO.Path.GetFileName(path),
+                CreatedUtc = DateTimeOffset.UtcNow,
+                ExpiresUtc = _settings.RetentionHours == 0 ? null : DateTimeOffset.UtcNow.AddHours(_settings.RetentionHours)
+            });
+            _store.Save(Items);
+            ShowShelf();
+        }
+        catch (System.Runtime.InteropServices.ExternalException)
+        {
+        }
+        catch (IOException)
+        {
+        }
+    }
+
+    private static byte[]? TryReadClipboardPng()
+    {
+        try
+        {
+            if (System.Windows.Clipboard.GetImage() is BitmapSource image)
+            {
                 var encoder = new PngBitmapEncoder();
                 encoder.Frames.Add(BitmapFrame.Create(image));
-                byte[] pngBytes;
-                using (var stream = new MemoryStream())
-                {
-                    encoder.Save(stream);
-                    pngBytes = stream.ToArray();
-                }
-
-                var imageHash = Convert.ToHexString(SHA256.HashData(pngBytes));
-                var now = DateTimeOffset.UtcNow;
-                if (imageHash == _lastClipboardImageHash && now - _lastClipboardImageAt < TimeSpan.FromSeconds(2))
-                {
-                    return;
-                }
-
-                _lastClipboardImageHash = imageHash;
-                _lastClipboardImageAt = now;
-                var path = _store.CreateScreenshotPath();
-                File.WriteAllBytes(path, pngBytes);
-
-                Items.Insert(0, new ShelfItem
-                {
-                    Kind = ShelfItemKind.Screenshot,
-                    Path = path,
-                    DisplayName = System.IO.Path.GetFileName(path),
-                    CreatedUtc = DateTimeOffset.UtcNow,
-                    ExpiresUtc = _settings.RetentionHours == 0 ? null : DateTimeOffset.UtcNow.AddHours(_settings.RetentionHours)
-                });
-                _store.Save(Items);
-                ShowShelf();
+                using var stream = new MemoryStream();
+                encoder.Save(stream);
+                return stream.ToArray();
             }
-            catch (System.Runtime.InteropServices.ExternalException)
+
+        }
+        catch (System.Runtime.InteropServices.ExternalException)
+        {
+        }
+
+        try
+        {
+            var data = System.Windows.Clipboard.GetDataObject();
+            if (data is not null)
             {
+                foreach (var format in new[] { "PNG", "image/png" })
+                {
+                    if (!data.GetDataPresent(format))
+                    {
+                        continue;
+                    }
+
+                    var payload = data.GetData(format);
+                    byte[]? bytes = payload switch
+                    {
+                        byte[] array => array,
+                        MemoryStream memory => memory.ToArray(),
+                        Stream stream => CopyToBytes(stream),
+                        _ => null
+                    };
+
+                    if (bytes is not null && IsValidImage(bytes))
+                    {
+                        return bytes;
+                    }
+                }
             }
-            catch (IOException)
+        }
+        catch (System.Runtime.InteropServices.ExternalException)
+        {
+        }
+        catch (IOException)
+        {
+        }
+        catch (InvalidOperationException)
+        {
+        }
+        catch (ArgumentException)
+        {
+        }
+
+        try
+        {
+            using var bitmap = Forms.Clipboard.GetImage();
+            if (bitmap is not null)
             {
+                using var stream = new MemoryStream();
+                bitmap.Save(stream, ImageFormat.Png);
+                return stream.ToArray();
             }
-        }));
+        }
+        catch (System.Runtime.InteropServices.ExternalException)
+        {
+        }
+        catch (IOException)
+        {
+        }
+        catch (InvalidOperationException)
+        {
+        }
+        catch (ArgumentException)
+        {
+        }
+
+        return null;
+    }
+
+    private static byte[] CopyToBytes(Stream stream)
+    {
+        using var copy = new MemoryStream();
+        stream.CopyTo(copy);
+        return copy.ToArray();
+    }
+
+    private static bool IsValidImage(byte[] bytes)
+    {
+        try
+        {
+            using var stream = new MemoryStream(bytes, writable: false);
+            var decoder = new BitmapImage();
+            decoder.BeginInit();
+            decoder.CacheOption = BitmapCacheOption.OnLoad;
+            decoder.StreamSource = stream;
+            decoder.EndInit();
+            return decoder.PixelWidth > 0 && decoder.PixelHeight > 0;
+        }
+        catch (Exception ex) when (ex is IOException or NotSupportedException or ArgumentException)
+        {
+            return false;
+        }
     }
 
     private void AddRetentionOption(Forms.ToolStripMenuItem parent, string label, int hours)
@@ -806,7 +963,7 @@ public partial class MainWindow : Window
         if (ItemsList.SelectedItem is ShelfItem { Kind: ShelfItemKind.Screenshot, Exists: true } item)
         {
             var preview = new PreviewWindow(item.Path) { Owner = this };
-            preview.ShowDialog();
+            preview.Show();
         }
     }
 

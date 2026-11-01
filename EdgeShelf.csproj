@@ -9,10 +9,13 @@
     <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>EdgeShelf</AssemblyName>
     <RootNamespace>EdgeShelf</RootNamespace>
+    <ApplicationIcon>Assets\EdgeShelf.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="WPF-UI" Version="4.3.0" />
+    <Resource Include="Assets\EdgeShelf.ico" />
+    <Resource Include="Assets\EdgeShelf-logo.png" />
   </ItemGroup>
 
 </Project>

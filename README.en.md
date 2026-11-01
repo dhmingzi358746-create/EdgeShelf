@@ -31,11 +31,11 @@ It stays collapsed when not in use. Reveal the handle to open it, or drag files 
 
 | Feature | Current behavior |
 | --- | --- |
-| Native screenshot workflow | Capture with `Win + Shift + S`; clipboard images are added to the shelf automatically |
-| Files and folders | Drop multiple items from File Explorer; only the original paths are stored |
+| Cross-app screenshot workflow | Capture with Windows `Win + Shift + S`, WeChat `Alt + A`, QQ `Ctrl + Alt + A`, or other screenshot shortcuts; clipboard images are added automatically |
+| Files and folders | Drop multiple items from File Explorer; cards show filenames, and only the original paths are stored |
 | Box selection and multi-file drag | Select from list whitespace or the top drop-hint area, then left-drag a selected card to export the group; no Alt key required |
 | Collapsible edge panel | Hover reveals the handle; clicking opens the shelf; incoming file drags expand it automatically; it retracts about 3 seconds after the pointer leaves |
-| Preview and pinning | Screenshot thumbnails, double-click preview, and pinning to prevent automatic expiry |
+| Preview and pinning | Screenshot thumbnails and double-click preview; shelf files remain draggable while previews are open; pinning prevents automatic expiry |
 | Screenshot retention | Keep captures for 1 hour, 24 hours, 7 days, or forever; the default is 24 hours |
 | Tray settings | Show the shelf, toggle startup, choose retention, switch Chinese / English, or exit |
 | Local persistence | Restore items and settings after restart, with an unavailable-file indicator |
@@ -48,7 +48,7 @@ It stays collapsed when not in use. Reveal the handle to open it, or drag files 
 2. **Capture an image:** use `Win + Shift + S`. Once the capture reaches the clipboard, it is added automatically.
 3. **Collect files:** drag files or folders from File Explorer to the right edge, wait for the shelf to expand, and drop them.
 4. **Select and export:** box-select from list whitespace or the **Drop files here** area, then left-drag any selected card to another app. Dragging directly on a file card starts a file drag, not a box selection.
-5. **Manage items:** right-click to pin or remove an item, use **Delete selected** for a selection, or double-click a screenshot to preview it.
+5. **Manage items:** right-click to pin or remove an item, or use **Delete selected**. With the shelf focused, `Delete` also removes the selected items. Double-click a screenshot to preview it; shelf files remain draggable while the preview is open.
 
 ### Settings
 
@@ -57,7 +57,7 @@ Right-click the **EdgeShelf icon in the Windows notification area**, including t
 - **语言 / Language → 中文 / English:** choose the interface language; the choice is saved.
 - **Screenshot retention:** choose 1 hour, 24 hours, 7 days, or forever. Changing this setting recalculates expiry for existing unpinned screenshots from the time of the change.
 - **Start with Windows:** enable or disable launch at sign-in.
-- **Show shelf / Exit:** reveal the window or quit the application. The top-right `×` only hides the shelf.
+- **Show shelf / Exit:** reveal the window or quit the application. The top-right `×` collapses the shelf and shows its handle; click the handle to reopen it.
 
 The 3-second auto-collapse delay is currently built in, not user-configurable.
 
