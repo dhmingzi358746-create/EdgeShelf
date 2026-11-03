@@ -63,7 +63,9 @@ The 3-second auto-collapse delay is currently built in, not user-configurable.
 
 ## Build and run
 
-**The repository currently provides source code only; no downloadable EXE Release has been published.** GitHub's **Download ZIP** downloads the source, not an installer.
+**A Windows x64 Release is available.** [Download the EdgeShelf v0.1.0 package](https://github.com/dhmingzi358746-create/EdgeShelf/releases/latest/download/EdgeShelf-v0.1.0-win-x64.zip); GitHub's **Download ZIP** remains a source archive, not the app package.
+
+Extract `EdgeShelf-v0.1.0-win-x64.zip` and run `EdgeShelf.exe`. This is a self-contained build, so the target computer does not need a separate .NET installation. EdgeShelf appears in the Windows notification area after startup.
 
 ### Requirements
 

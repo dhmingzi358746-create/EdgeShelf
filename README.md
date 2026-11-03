@@ -63,7 +63,9 @@ EdgeShelf 是一个运行在 Windows 屏幕右侧的截图与文件暂存工具�
 
 ## 获取与构建
 
-**当前仓库提供源码，尚未发布可下载的 EXE Release。** 仓库的“Download ZIP”下载的是源码包，不是安装包。
+**已提供 Windows x64 Release。** [下载 EdgeShelf v0.1.0 安装包](https://github.com/dhmingzi358746-create/EdgeShelf/releases/latest/download/EdgeShelf-v0.1.0-win-x64.zip)；仓库的“Download ZIP”仍然是源码包，不是安装包。
+
+下载后解压 `EdgeShelf-v0.1.0-win-x64.zip`，双击其中的 `EdgeShelf.exe` 即可运行。该版本是自包含发布，目标电脑无需另外安装 .NET。首次启动后，EdgeShelf 会出现在 Windows 通知区域。
 
 ### 环境
 
